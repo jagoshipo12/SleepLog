@@ -32,9 +32,9 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selection) {
             // 1. 홈 탭
-            HomeView()
+            HomeView(tabSelection: $selection)
                 .tabItem {
-                    Image(systemName: "moon.stars.fill")
+                    Image(systemName: "house.fill")
                     Text("홈")
                 }
                 .tag(0)
