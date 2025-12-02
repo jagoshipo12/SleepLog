@@ -27,6 +27,22 @@ struct HomeView: View {
     let textPrimary = Color.white
     let textSecondary = Color.gray
     
+    /// 시간대에 따른 인사말을 반환합니다.
+    var greetingMessage: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        switch hour {
+        case 5..<12:
+            return "좋은 아침입니다"
+        case 12..<18:
+            return "좋은 점심입니다"
+        case 18..<22:
+            return "좋은 저녁입니다"
+        default:
+            return "좋은 밤입니다"
+        }
+    }
+    
     var body: some View {
         ZStack {
             // 배경색 설정 (Safe Area 무시하고 전체 화면 채움)
@@ -36,7 +52,7 @@ struct HomeView: View {
                 // 상단 헤더 영역
                 HStack {
                     VStack(alignment: .leading) {
-                        Text("좋은 아침입니다")
+                        Text(greetingMessage)
                             .font(.system(size: 18, weight: .medium, design: .rounded))
                             .foregroundColor(textSecondary)
                         Text("SleepLog")
@@ -70,9 +86,30 @@ struct HomeView: View {
                             .foregroundColor(accentPurple)
                     } else if let lastLog = logs.first, Calendar.current.isDateInToday(lastLog.wakeTime) {
                         // 오늘 기록이 있을 때
-                        Text(lastLog.durationString)
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                            .foregroundColor(textPrimary)
+                        HStack(alignment: .bottom) {
+                            Text(lastLog.durationString)
+                                .font(.system(size: 48, weight: .bold, design: .rounded))
+                                .foregroundColor(textPrimary)
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing) {
+                                Text("\(lastLog.sleepScore)점")
+                                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                                    .foregroundColor(accentPurple)
+                                
+                                HStack(spacing: 5) {
+                                    Text(lastLog.scoreEmoji)
+                                    Text(lastLog.scoreDescription)
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundColor(textSecondary)
+                                }
+                                
+                                Text(manager.calculateScoreChange(logs: logs))
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundColor(manager.calculateScoreChange(logs: logs).contains("^") ? .green : .red)
+                            }
+                        }
                     } else {
                         // 오늘 기록이 없을 때
                         Text("-- 시간 -- 분")
@@ -91,6 +128,37 @@ struct HomeView: View {
                 .cornerRadius(25)
                 .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                 .padding(.horizontal)
+                
+                // AI 수면 코치 피드백 카드
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.yellow)
+                        Text("AI 수면 코치")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(textPrimary)
+                    }
+                    
+                    Text(manager.sleepFeedback)
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .foregroundColor(textSecondary)
+                        .fixedSize(horizontal: false, vertical: true) // 텍스트 줄바꿈 허용
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+                .background(cardBackground)
+                .cornerRadius(20)
+                .padding(.horizontal)
+                .onAppear {
+                    if !logs.isEmpty {
+                        manager.fetchSleepFeedback(logs: logs)
+                    }
+                }
+                .onChange(of: logs) { oldValue, newValue in
+                    if !newValue.isEmpty {
+                        manager.fetchSleepFeedback(logs: newValue)
+                    }
+                }
                 
                 Spacer()
                 
@@ -181,6 +249,14 @@ struct HomeView: View {
 }
 
 #Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: SleepLog.self, configurations: config)
+    let manager = SleepLogManager()
+    
     HomeView(tabSelection: .constant(0))
-        .environment(SleepLogManager())
+        .environment(manager)
+        .modelContainer(container)
+        .onAppear {
+            manager.setContext(container.mainContext)
+        }
 }

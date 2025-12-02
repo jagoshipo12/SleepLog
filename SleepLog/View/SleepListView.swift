@@ -47,6 +47,10 @@ struct SleepListView: View {
                                 }
                                 
                                 Spacer()
+                                
+                                // 수면 점수 이모티콘
+                                Text(log.scoreEmoji)
+                                    .font(.system(size: 24))
                             }
                             .listRowBackground(cardBackground) // 리스트 셀 배경색
                             .listRowSeparator(.hidden) // 구분선 숨김
@@ -70,6 +74,14 @@ struct SleepListView: View {
 }
 
 #Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: SleepLog.self, configurations: config)
+    let manager = SleepLogManager()
+    
     SleepListView()
-        .environment(SleepLogManager())
+        .environment(manager)
+        .modelContainer(container)
+        .onAppear {
+            manager.setContext(container.mainContext)
+        }
 }

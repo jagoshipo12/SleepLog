@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// 탭 기반의 메인 네비게이션을 관리하는 뷰입니다.
 /// 홈, 기록, 통계 탭으로 구성되어 있습니다.
@@ -61,6 +62,14 @@ struct ContentView: View {
 }
 
 #Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: SleepLog.self, configurations: config)
+    let manager = SleepLogManager()
+    
     ContentView()
-        .environment(SleepLogManager())
+        .environment(manager)
+        .modelContainer(container)
+        .onAppear {
+            manager.setContext(container.mainContext)
+        }
 }

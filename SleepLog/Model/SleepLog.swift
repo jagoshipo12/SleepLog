@@ -39,4 +39,35 @@ final class SleepLog {
         
         return "\(hours)시간 \(minutes)분"
     }
+    /// 수면 점수 (0~100점)
+    /// 8시간 수면을 100점으로 기준으로 하고, 차이에 따라 감점합니다.
+    var sleepScore: Int {
+        let targetDuration: TimeInterval = 8 * 3600 // 8시간
+        let difference = abs(sleepDuration - targetDuration)
+        let hoursDifference = difference / 3600.0
+        
+        // 1시간 차이당 10점 감점
+        let score = 100 - Int(hoursDifference * 10)
+        return max(0, min(100, score))
+    }
+    
+    /// 수면 점수에 따른 이모티콘
+    var scoreEmoji: String {
+        switch sleepScore {
+        case 85...100: return "😃"
+        case 75..<85: return "🙂"
+        case 60..<75: return "😐"
+        default: return "😟"
+        }
+    }
+    
+    /// 수면 점수에 따른 상태 설명
+    var scoreDescription: String {
+        switch sleepScore {
+        case 85...100: return "매우 좋음"
+        case 75..<85: return "좋음"
+        case 60..<75: return "보통"
+        default: return "관심 필요"
+        }
+    }
 }

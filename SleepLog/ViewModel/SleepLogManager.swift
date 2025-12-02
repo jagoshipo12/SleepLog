@@ -66,6 +66,25 @@ class SleepLogManager {
         return "\(hours)시간 \(minutes)분"
     }
     
+    /// 최근 수면 점수 변화량을 계산합니다.
+    /// - Parameter logs: 최신순으로 정렬된 수면 기록 배열
+    /// - Returns: 변화량 문자열 (예: "^15", "v5", "-")
+    func calculateScoreChange(logs: [SleepLog]) -> String {
+        guard logs.count >= 2 else { return "-" }
+        
+        let todayScore = logs[0].sleepScore
+        let yesterdayScore = logs[1].sleepScore
+        let diff = todayScore - yesterdayScore
+        
+        if diff > 0 {
+            return "^\(diff)"
+        } else if diff < 0 {
+            return "v\(abs(diff))"
+        } else {
+            return "-"
+        }
+    }
+    
     // MARK: - Automatic Sleep Tracking
     
     /// 현재 수면 중인지 여부
@@ -137,6 +156,23 @@ class SleepLogManager {
             print("SleepLogManager: Sample data saved successfully")
         } catch {
             print("SleepLogManager Error: Failed to save sample data - \(error)")
+        }
+    }
+    // MARK: - Local Sleep Coach Integration
+    
+    private let sleepCoachService = SleepCoachService()
+    
+    /// AI 코치가 생성한 수면 피드백
+    var sleepFeedback: String = "수면 데이터를 분석하고 있어요..."
+    
+    /// 수면 피드백을 요청합니다.
+    func fetchSleepFeedback(logs: [SleepLog]) {
+        // 로컬 연산이지만, 사용자가 '분석 중'이라는 느낌을 받을 수 있도록 약간의 지연을 줍니다.
+        sleepFeedback = "수면 데이터를 분석하고 있어요..."
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            self.sleepFeedback = self.sleepCoachService.generateFeedback(logs: logs)
         }
     }
 }
