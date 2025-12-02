@@ -122,7 +122,7 @@ class SleepLogManager {
     }
     
     /// 테스트를 위한 샘플 데이터를 생성합니다.
-    /// 지난 7일간의 임의의 수면 기록을 추가합니다.
+    /// 8월부터 11월까지의 임의의 수면 기록을 추가합니다.
     func createSampleData() {
         guard let context = modelContext else {
             print("SleepLogManager Error: Context is nil in createSampleData")
@@ -133,22 +133,44 @@ class SleepLogManager {
         let calendar = Calendar.current
         let today = Date()
         
-        for i in 1...7 {
-            // i일 전의 날짜 계산
-            guard let date = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
+        // 8월 1일부터 11월 30일까지 데이터 생성
+        // 현재 날짜 기준이 아니라 고정된 기간으로 설정
+        let year = calendar.component(.year, from: today)
+        
+        for month in 8...11 {
+            let range = calendar.range(of: .day, in: .month, for: calendar.date(from: DateComponents(year: year, month: month))!)!
             
-            // 취침 시간: 전날 밤 10시 ~ 12시 사이
-            // 기상 시간: 다음날 아침 6시 ~ 9시 사이
-            let startHour = Int.random(in: 22...23)
-            let startMinute = Int.random(in: 0...59)
-            let sleepDuration = Double.random(in: 6...9) * 3600 // 6~9시간
-            
-            guard let sleepTime = calendar.date(bySettingHour: startHour, minute: startMinute, second: 0, of: date) else { continue }
-            let wakeTime = sleepTime.addingTimeInterval(sleepDuration)
-            
-            let log = SleepLog(sleepTime: sleepTime, wakeTime: wakeTime)
-            context.insert(log)
-            print("SleepLogManager: Inserted log for \(date)")
+            for day in range {
+                // 30% 확률로 기록 누락 (자연스럽게 보이도록)
+                if Int.random(in: 1...100) <= 30 { continue }
+                
+                let dateComponents = DateComponents(year: year, month: month, day: day)
+                guard let date = calendar.date(from: dateComponents) else { continue }
+                
+                // 미래 날짜는 제외
+                if date > today { continue }
+                
+                // 취침 시간: 밤 10시 ~ 새벽 2시 사이
+                let startHour = [22, 23, 0, 1, 2].randomElement()!
+                let startMinute = Int.random(in: 0...59)
+                
+                // 수면 시간: 4시간 ~ 10시간
+                let sleepDuration = Double.random(in: 4...10) * 3600
+                
+                var sleepTime = calendar.date(bySettingHour: startHour, minute: startMinute, second: 0, of: date)!
+                
+                // 새벽 0~2시에 잠든 경우, 날짜를 다음날로 넘기지 않도록 주의 (데이터 날짜 기준)
+                // 하지만 여기서는 '해당 날짜의 밤'에 잠든 것으로 처리하기 위해,
+                // 0~2시인 경우 날짜를 하루 더해줌 (다음날 새벽)
+                if startHour < 12 {
+                    sleepTime = calendar.date(byAdding: .day, value: 1, to: sleepTime)!
+                }
+                
+                let wakeTime = sleepTime.addingTimeInterval(sleepDuration)
+                
+                let log = SleepLog(sleepTime: sleepTime, wakeTime: wakeTime)
+                context.insert(log)
+            }
         }
         
         do {

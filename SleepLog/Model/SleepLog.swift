@@ -14,6 +14,21 @@ final class SleepLog {
     /// 총 수면 시간 (초 단위)
     var sleepDuration: TimeInterval
     
+    // 수면 단계 데이터
+    var sleepStages: [SleepStageItem] = []
+    
+    // 건강 데이터 샘플 구조체
+    struct HealthSample: Identifiable, Codable {
+        var id = UUID()
+        var date: Date
+        var value: Double
+    }
+    
+    // 건강 지표 데이터
+    var bloodOxygenSamples: [HealthSample] = []
+    var heartRateSamples: [HealthSample] = []
+    var respiratoryRate: Double = 0.0
+    
     /// 초기화 메서드
     /// - Parameters:
     ///   - sleepTime: 잠자리에 든 시간
@@ -24,6 +39,86 @@ final class SleepLog {
         self.wakeTime = wakeTime
         // 기상 시간에서 취침 시간을 뺀 차이를 계산하여 저장
         self.sleepDuration = wakeTime.timeIntervalSince(sleepTime)
+        self.sleepStages = Self.generateRandomSleepStages(start: sleepTime, end: wakeTime)
+        
+        // 건강 데이터 생성
+        let healthData = Self.generateRandomHealthData(start: sleepTime, end: wakeTime)
+        self.bloodOxygenSamples = healthData.oxygen
+        self.heartRateSamples = healthData.heartRate
+        self.respiratoryRate = healthData.respiratory
+    }
+    
+    // 수면 단계 열거형
+    enum SleepStage: String, Codable, CaseIterable {
+        case awake = "수면 중 깰"
+        case rem = "렘 수면"
+        case light = "얕은 수면"
+        case deep = "깊은 수면"
+        
+        var color: String {
+            switch self {
+            case .awake: return "red"
+            case .rem: return "blue"
+            case .light: return "green"
+            case .deep: return "purple"
+            }
+        }
+    }
+    
+    // 수면 단계 아이템 구조체
+    struct SleepStageItem: Identifiable, Codable {
+        var id = UUID()
+        var stage: SleepStage
+        var startTime: Date
+        var endTime: Date
+        var duration: TimeInterval {
+            endTime.timeIntervalSince(startTime)
+        }
+    }
+    
+    // 랜덤 수면 단계 생성 로직
+    static func generateRandomSleepStages(start: Date, end: Date) -> [SleepStageItem] {
+        var stages: [SleepStageItem] = []
+        var currentTime = start
+        
+        while currentTime < end {
+            // 15분 ~ 90분 사이 랜덤 지속 시간
+            let duration = Double.random(in: 900...5400)
+            let nextTime = min(currentTime.addingTimeInterval(duration), end)
+            
+            // 랜덤 단계 선택 (가중치 적용 가능)
+            let stage = SleepStage.allCases.randomElement() ?? .light
+            
+            stages.append(SleepStageItem(stage: stage, startTime: currentTime, endTime: nextTime))
+            currentTime = nextTime
+        }
+        
+        return stages
+    }
+    
+    // 랜덤 건강 데이터 생성 로직
+    static func generateRandomHealthData(start: Date, end: Date) -> (oxygen: [HealthSample], heartRate: [HealthSample], respiratory: Double) {
+        var oxygenSamples: [HealthSample] = []
+        var heartRateSamples: [HealthSample] = []
+        var currentTime = start
+        
+        // 30분 간격으로 샘플 생성
+        while currentTime <= end {
+            // 혈중 산소: 90% ~ 100%
+            let oxygenValue = Double.random(in: 90...100)
+            oxygenSamples.append(HealthSample(date: currentTime, value: oxygenValue))
+            
+            // 심박수: 50 ~ 80 BPM
+            let heartRateValue = Double.random(in: 50...80)
+            heartRateSamples.append(HealthSample(date: currentTime, value: heartRateValue))
+            
+            currentTime = currentTime.addingTimeInterval(1800) // 30분
+        }
+        
+        // 호흡수: 12 ~ 18 회/분 (평균값)
+        let respiratoryRate = Double.random(in: 12...18)
+        
+        return (oxygenSamples, heartRateSamples, respiratoryRate)
     }
     
     /// 수면 시간을 "N시간 N분" 형식의 문자열로 반환하는 계산 속성입니다.
