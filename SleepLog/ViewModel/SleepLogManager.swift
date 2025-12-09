@@ -188,13 +188,22 @@ class SleepLogManager {
     var sleepFeedback: String = "수면 데이터를 분석하고 있어요..."
     
     /// 수면 피드백을 요청합니다.
+    /// 수면 피드백을 요청합니다.
     func fetchSleepFeedback(logs: [SleepLog]) {
-        // 로컬 연산이지만, 사용자가 '분석 중'이라는 느낌을 받을 수 있도록 약간의 지연을 줍니다.
-        sleepFeedback = "수면 데이터를 분석하고 있어요..."
+        sleepFeedback = "AI가 수면 데이터를 분석하고 있어요..."
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self = self else { return }
-            self.sleepFeedback = self.sleepCoachService.generateFeedback(logs: logs)
+        Task {
+            guard let lastLog = logs.first else {
+                self.sleepFeedback = self.sleepCoachService.generateFeedback(logs: logs)
+                return
+            }
+            
+            do {
+                self.sleepFeedback = try await sleepCoachService.fetchDailyFeedback(log: lastLog)
+            } catch {
+                print("Gemini API Error: \(error)")
+                self.sleepFeedback = self.sleepCoachService.generateFeedback(logs: logs)
+            }
         }
     }
 }

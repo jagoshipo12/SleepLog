@@ -1,0 +1,18 @@
+# Xcode
+.DS_Store
+*/build/
+*.derivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# API Key
+SleepLog/APIKey.swift
+APIKey.swift

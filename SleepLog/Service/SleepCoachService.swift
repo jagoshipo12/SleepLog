@@ -63,6 +63,24 @@ class SleepCoachService {
         return response.text ?? "분석을 생성할 수 없습니다."
     }
     
+    /// Google Gemini API를 사용하여 오늘의 수면 피드백을 생성합니다.
+    func fetchDailyFeedback(log: SleepLog) async throws -> String {
+        let model = GenerativeModel(name: "gemini-pro", apiKey: APIKey.key)
+        
+        let prompt = """
+        사용자의 오늘 수면 기록입니다.
+        - 날짜: \(log.sleepTime.formatted())
+        - 수면 시간: \(Int(log.sleepDuration/60))분
+        - 수면 점수: \(log.sleepScore)점
+        
+        이 사용자에게 건넬 따뜻하고 격려가 되는 한 마디를 한국어로 50자 이내로 작성해주세요.
+        이모지를 1개 포함해주세요.
+        """
+        
+        let response = try await model.generateContent(prompt)
+        return response.text ?? "오늘도 좋은 하루 보내세요! 🌟"
+    }
+    
     /// 주간 수면 기록을 분석하여 상세 리포트를 생성합니다.
     /// - Parameter logs: 분석할 수면 기록 배열 (보통 최근 7일)
     /// - Returns: 분석 결과 텍스트
