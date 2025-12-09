@@ -18,7 +18,7 @@ struct WatchSettingsView: View {
                         .font(.system(size: 60))
                         .foregroundColor(isConnected ? .green : .gray)
                     
-                    Text(isConnected ? "Apple Watch Series 9" : "연결된 워치 없음")
+                    Text(isConnected ? "Apple Watch Series 9" : "스마트 워치 연동이 해제됨")
                         .font(.title2)
                         .bold()
                         .foregroundColor(textPrimary)

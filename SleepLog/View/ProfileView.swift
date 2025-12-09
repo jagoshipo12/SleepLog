@@ -4,6 +4,10 @@ import SwiftData
 struct ProfileView: View {
     @Query private var logs: [SleepLog]
     
+    @AppStorage("sleepGoalHours") private var sleepGoalHours: Int = 8
+    @AppStorage("sleepGoalMinutes") private var sleepGoalMinutes: Int = 0
+    @AppStorage("isWatchConnected") private var isWatchConnected: Bool = true
+    
     // 테마 색상
     let darkBackground = Color(red: 0.05, green: 0.05, blue: 0.15)
     let cardBackground = Color(red: 0.1, green: 0.1, blue: 0.2)
@@ -66,12 +70,12 @@ struct ProfileView: View {
                                     Text("스마트 워치 연동")
                                         .foregroundColor(textPrimary)
                                     Spacer()
-                                    Text("연결됨")
+                                    Text(isWatchConnected ? "연결됨" : "연결 해제됨")
                                         .font(.subheadline)
-                                        .foregroundColor(.green)
+                                        .foregroundColor(isWatchConnected ? .green : .red)
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 5)
-                                        .background(Color.green.opacity(0.2))
+                                        .background(isWatchConnected ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
                                         .cornerRadius(10)
                                 }
                             }
@@ -90,13 +94,13 @@ struct ProfileView: View {
                             
                             VStack(spacing: 0) {
                                 NavigationLink(destination: SleepGoalView()) {
-                                    SettingRow(icon: "target", title: "수면 목표", value: "\(UserDefaults.standard.integer(forKey: "sleepGoalHours"))시간")
+                                    SettingRow(icon: "target", title: "수면 목표", value: "\(sleepGoalHours)시간 \(sleepGoalMinutes)분")
                                 }
                                 
                                 Divider().background(Color.gray.opacity(0.3))
                                 
                                 NavigationLink(destination: WatchSettingsView()) {
-                                    SettingRow(icon: "watchface.applewatch.case", title: "워치", value: UserDefaults.standard.bool(forKey: "isWatchConnected") ? "연결됨" : "연결 안 됨")
+                                    SettingRow(icon: "watchface.applewatch.case", title: "워치", value: isWatchConnected ? "연결됨" : "연결 안 됨")
                                 }
                                 
                                 Divider().background(Color.gray.opacity(0.3))
