@@ -53,129 +53,18 @@ struct StatisticsView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 darkBackground.ignoresSafeArea()
                 
                 VStack(spacing: 20) {
-                    // 1. 기간 선택 탭
-                    Picker("Time Range", selection: $selectedRange) {
-                        ForEach(TimeRange.allCases) { range in
-                            Text(range.rawValue).tag(range)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .padding(.top)
+                    timeRangePicker
                     
                     ScrollView {
                         VStack(spacing: 20) {
-                            // 2. 요약 텍스트 영역
-                            VStack(spacing: 10) {
-                                Text(statistics.dateRange)
-                                    .font(.headline)
-                                    .foregroundColor(textSecondary)
-                                
-                                Text("평균 수면 시간 \(statistics.averageDuration)")
-                                    .font(.title2)
-                                    .bold()
-                                    .foregroundColor(textPrimary)
-                                
-                                HStack {
-                                    Text("평균 취침: \(statistics.averageBedtime)")
-                                    Text("|")
-                                        .foregroundColor(textSecondary)
-                                    Text("평균 기상: \(statistics.averageWakeTime)")
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(textSecondary)
-                            }
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(cardBackground)
-                            .cornerRadius(15)
-                            .padding(.horizontal)
-                            
-                            // 3. 차트 영역 (스택형 막대 그래프)
-                            VStack(alignment: .leading, spacing: 15) {
-                                Text("수면 단계 분석")
-                                    .font(.headline)
-                                    .foregroundColor(textPrimary)
-                                
-                                if filteredLogs.isEmpty {
-                                    Text("표시할 데이터가 없습니다.")
-                                        .foregroundColor(textSecondary)
-                                        .frame(height: 300)
-                                        .frame(maxWidth: .infinity)
-                                } else {
-                                    Chart {
-                                        if selectedRange == .yearly {
-                                            // 연간: 월별 평균 데이터
-                                            ForEach(monthlyAggregatedData, id: \.month) { data in
-                                                ForEach(data.stages, id: \.stage) { stageData in
-                                                    BarMark(
-                                                        x: .value("Month", data.month, unit: .month),
-                                                        y: .value("Duration", stageData.duration / 3600)
-                                                    )
-                                                    .foregroundStyle(by: .value("Stage", stageData.stage))
-                                                }
-                                            }
-                                        } else {
-                                            // 주간/월간: 일별 데이터
-                                            ForEach(filteredLogs) { log in
-                                                ForEach(log.sleepStages) { stage in
-                                                    BarMark(
-                                                        x: .value("Date", log.sleepTime, unit: .day),
-                                                        y: .value("Duration", stage.duration / 3600)
-                                                    )
-                                                    .foregroundStyle(by: .value("Stage", stage.stage))
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .chartForegroundStyleScale([
-                                        SleepLog.SleepStage.awake: Color.red,
-                                        SleepLog.SleepStage.rem: Color.blue,
-                                        SleepLog.SleepStage.light: Color.green,
-                                        SleepLog.SleepStage.deep: Color.purple
-                                    ])
-                                    .chartYAxis {
-                                        AxisMarks(position: .leading) { value in
-                                            AxisValueLabel {
-                                                if let doubleValue = value.as(Double.self) {
-                                                    Text("\(Int(doubleValue))h")
-                                                        .foregroundColor(textSecondary)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .chartXAxis {
-                                        AxisMarks(values: .automatic) { value in
-                                            if selectedRange == .yearly {
-                                                AxisValueLabel(format: .dateTime.month())
-                                                    .foregroundStyle(textSecondary)
-                                            } else {
-                                                AxisValueLabel(format: .dateTime.day())
-                                                    .foregroundStyle(textSecondary)
-                                            }
-                                        }
-                                    }
-                                    .frame(height: 300)
-                                }
-                            }
-                            .padding()
-                            .background(cardBackground)
-                            .cornerRadius(15)
-                            .padding(.horizontal)
-                            
-                            // 범례 (Legend)
-                            HStack(spacing: 15) {
-                                LegendItem(color: .red, label: "깸")
-                                LegendItem(color: .blue, label: "렘")
-                                LegendItem(color: .green, label: "얕은")
-                                LegendItem(color: .purple, label: "깊은")
-                            }
-                            .padding(.bottom)
+                            summarySection
+                            chartSection
+                            legendSection
                         }
                     }
                 }
@@ -183,6 +72,133 @@ struct StatisticsView: View {
             .navigationTitle("통계")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+    
+    // MARK: - Subviews
+    
+    private var timeRangePicker: some View {
+        Picker("Time Range", selection: $selectedRange) {
+            ForEach(TimeRange.allCases) { range in
+                Text(range.rawValue).tag(range)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    private var summarySection: some View {
+        VStack(spacing: 10) {
+            Text(statistics.dateRange)
+                .font(.headline)
+                .foregroundColor(textSecondary)
+            
+            Text("평균 수면 시간 \(statistics.averageDuration)")
+                .font(.title2)
+                .bold()
+                .foregroundColor(textPrimary)
+            
+            HStack {
+                Text("평균 취침: \(statistics.averageBedtime)")
+                Text("|")
+                    .foregroundColor(textSecondary)
+                Text("평균 기상: \(statistics.averageWakeTime)")
+            }
+            .font(.subheadline)
+            .foregroundColor(textSecondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(cardBackground)
+        .cornerRadius(15)
+        .padding(.horizontal)
+    }
+    
+    private var chartSection: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("수면 단계 분석")
+                .font(.headline)
+                .foregroundColor(textPrimary)
+            
+            if filteredLogs.isEmpty {
+                Text("표시할 데이터가 없습니다.")
+                    .foregroundColor(textSecondary)
+                    .frame(height: 300)
+                    .frame(maxWidth: .infinity)
+            } else {
+                chartView
+            }
+        }
+        .padding()
+        .background(cardBackground)
+        .cornerRadius(15)
+        .padding(.horizontal)
+    }
+    
+    private var chartView: some View {
+        Chart {
+            if selectedRange == .yearly {
+                // 연간: 월별 평균 데이터
+                ForEach(monthlyAggregatedData, id: \.month) { data in
+                    ForEach(data.stages, id: \.stage) { stageData in
+                        BarMark(
+                            x: .value("Month", data.month, unit: .month),
+                            y: .value("Duration", stageData.duration / 3600)
+                        )
+                        .foregroundStyle(by: .value("Stage", stageData.stage))
+                    }
+                }
+            } else {
+                // 주간/월간: 일별 데이터
+                ForEach(filteredLogs) { log in
+                    ForEach(log.sleepStages) { stage in
+                        BarMark(
+                            x: .value("Date", log.sleepTime, unit: .day),
+                            y: .value("Duration", stage.duration / 3600)
+                        )
+                        .foregroundStyle(by: .value("Stage", stage.stage))
+                    }
+                }
+            }
+        }
+        .chartForegroundStyleScale([
+            SleepLog.SleepStage.awake: Color.red,
+            SleepLog.SleepStage.rem: Color.blue,
+            SleepLog.SleepStage.light: Color.green,
+            SleepLog.SleepStage.deep: Color.purple
+        ])
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisValueLabel {
+                    if let doubleValue = value.as(Double.self) {
+                        Text("\(Int(doubleValue))h")
+                            .foregroundColor(textSecondary)
+                    }
+                }
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .automatic) { value in
+                if selectedRange == .yearly {
+                    AxisValueLabel(format: .dateTime.month())
+                        .foregroundStyle(textSecondary)
+                } else {
+                    AxisValueLabel(format: .dateTime.day())
+                        .foregroundStyle(textSecondary)
+                }
+            }
+        }
+        .frame(height: 300)
+    }
+    
+    private var legendSection: some View {
+        HStack(spacing: 15) {
+            LegendItem(color: .red, label: "깸")
+            LegendItem(color: .blue, label: "렘")
+            LegendItem(color: .green, label: "얕은")
+            LegendItem(color: .purple, label: "깊은")
+        }
+        .padding(.bottom)
     }
     
     // MARK: - Logic

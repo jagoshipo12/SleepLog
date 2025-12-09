@@ -55,6 +55,14 @@ struct ContentView: View {
                     Text("통계")
                 }
                 .tag(2)
+            
+            // 4. 프로필 탭
+            ProfileView()
+                .tabItem {
+                    Image(systemName: "person.crop.circle.fill")
+                    Text("프로필")
+                }
+                .tag(3)
         }
         .accentColor(accentPurple) // 탭바 강조 색상
         .preferredColorScheme(.dark) // 다크 모드 강제 적용
